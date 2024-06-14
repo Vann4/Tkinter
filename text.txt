@@ -1,0 +1,275 @@
+CREATE OR REPLACE FUNCTION log_order_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Вставляем запись в таблицу History
+    INSERT INTO History (OrderID, OrderDate, OldStatus, NewStatus)
+    VALUES (
+        NEW.OrderID,
+        NEW.OrderDate,
+        OLD.Status,
+        NEW.Status
+    );
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER trigger_order_status_change
+AFTER UPDATE OF Status ON Orders
+FOR EACH ROW
+WHEN (OLD.Status IS DISTINCT FROM NEW.Status)
+EXECUTE FUNCTION log_order_status_change();
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+SELECT
+    Orders.OrderID,
+    Orders.OrderDate,
+    Orders.PaymentMethod,
+    Orders.Status,
+    Orders.EmployeeID,
+    Employees.Employee AS Employee,
+    Orders."clientID",
+    Clients.Client AS Client
+FROM
+    Orders
+LEFT JOIN
+    Clients ON Orders."clientID" = Clients."clientID"
+LEFT JOIN
+    Employees ON Orders.EmployeeID = Employees.EmployeeID;
+
+
+
+SELECT
+	Clients.Client AS Client,
+	Clients.Phone AS Phone,
+	Clients.Email AS Email,
+    Orders.OrderDate,
+    Employees.Employee AS Employee
+FROM Orders
+LEFT JOIN Clients ON Orders."clientID" = Clients."clientID"
+LEFT JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID;
+
+
+
+
+SELECT
+    c."clientID",
+    c.Client,
+    c.Phone,
+    c.Email,
+    o.OrderID,
+    o.OrderDate,
+    COALESCE(SUM(o.Quantity * COALESCE(p.Price, s.Price)), 0) AS TotalAmount
+FROM
+    Clients c
+JOIN
+    Orders o ON c."clientID" = o."clientID"
+JOIN
+	Products p ON oi.ProductID = p.ProductID
+GROUP BY
+    c.ClientID, c.FirstName, c.LastName, c.Phone, c.Email, o.OrderID, o.OrderDate
+ORDER BY
+    c.ClientID, o.OrderID;
+
+
+
+
+
+
+
+
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- INSERT INTO Clients (Client, Phone, Email) VALUES
+-- ('Иванов И.И.', '+79000000001', 'ivanov@example.com'),
+-- ('Петров П.П.', '+79000000002', 'petrov@example.com'),
+-- ('Смирнов В.П.', '+79000000003', 'ssmirnov@example.com'),
+-- ('Алексеев А.А.', '+79000000004', 'alekseev@example.com'),
+-- ('Андреев А.А.', '+79000000005', 'andreev@example.com'),
+-- ('Михайлов М.М.', '+79000000006', 'mikhailov@example.com'),
+-- ('Дмитриев Д.Д.', '+79000000007', 'dmitriev@example.com'),
+-- ('Николаев Н.Н.', '+79000000008', 'nikolaev@example.com'),
+-- ('Владимиров В.В.', '+79000000009', 'vladimirov@example.com'),
+-- ('Александров В.А.', '+79000000010', 'alexandrov@example.com');
+
+-- INSERT INTO Employees (Employee, BirthDate, Phone, City, Street, HouseNumber, Apartment) VALUES
+-- ('Еленина E.E.', '1985-05-15', '89000000011', 'Москва', 'Ленина', '10', '1'),
+-- ('Михайлова О.Д. ', '1990-06-20', '89000000012', 'Москва', 'Пушкина', '20', '2'),
+-- ('Александрова М.С.', '1980-07-25', '89000000013', 'Москва', 'Кирова', '30', '3'),
+-- ('Аннова А.П.', '1995-08-30', '89000000014', 'Москва', 'Гагарина', '40', '4'),
+-- ('Светланова С.Г.', '1987-09-10', '89000000015', 'Москва', 'Лермонтова', '50', '5'),
+-- ('Юлиева Ю.В.', '1992-10-15', '89000000016', 'Москва', 'Толстого', '60', '6'),
+-- ('Татьянина Т.А.', '1989-11-20', '89000000017', 'Москва', 'Чехова', '70', '7'),
+-- ('Натальева Н.Н.', '1993-12-25', '89000000018', 'Москва', 'Тургенева', '80', '8'),
+-- ('Екатеринина Е.Ю.', '1991-01-05', '89000000019', 'Москва', 'Гончарова', '90', '9'),
+-- ('Викторинина В.Е.', '1988-02-10', '89000000020', 'Москва', 'Маяковского', '100', '10');
+
+-- INSERT INTO Products (article, Name, Price, CountryOfOrigin) VALUES
+-- ('PRD001', 'Рюкзак', 100.00, 'Россия'),
+-- ('PRD002', 'Сандали', 200.00, 'США'),
+-- ('PRD003', 'Кепка', 300.00, 'Китай'),
+-- ('PRD004', 'Спальник', 400.00, 'Германия'),
+-- ('PRD005', 'Пуховик', 500.00, 'Франция'),
+-- ('PRD006', 'Носки', 600.00, 'Италия'),
+-- ('PRD007', 'Футболка', 700.00, 'Испания'),
+-- ('PRD008', 'Термос', 800.00, 'Япония'),
+-- ('PRD009', 'Фонарик', 900.00, 'Канада'),
+-- ('PRD010', 'Палатка', 1000.00, 'Бразилия');
+
+-- INSERT INTO Services (article, Name, Price) VALUES
+-- ('SRV001', 'Услуга 1', 1000.00),
+-- ('SRV002', 'Услуга 2', 2000.00),
+-- ('SRV003', 'Услуга 3', 3000.00),
+-- ('SRV004', 'Услуга 4', 4000.00),
+-- ('SRV005', 'Услуга 5', 5000.00),
+-- ('SRV006', 'Услуга 6', 6000.00),
+-- ('SRV007', 'Услуга 7', 7000.00),
+-- ('SRV008', 'Услуга 8', 8000.00),
+-- ('SRV009', 'Услуга 9', 9000.00),
+-- ('SRV010', 'Услуга 10', 10000.00);
+
+INSERT INTO Orders (OrderDate, PaymentMethod, Status, EmployeeID, "clientID") VALUES
+('2024-06-01', 'Кредитная карта', 'Создан', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 0), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 0)),
+('2024-06-02', 'Наличные', 'Выполнен', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 1), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 1)),
+('2024-06-03', 'Кредитная карта', 'Отклонен', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 2), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 2)),
+('2024-06-04', 'Наличные', 'Создан', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 3), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 3)),
+('2024-06-05', 'Кредитная карта', 'Выполнен', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 4), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 4)),
+('2024-06-06', 'Наличные', 'Отклонен', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 5), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 5)),
+('2024-06-07', 'Кредитная карта', 'Создан', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 6), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 6)),
+('2024-06-08', 'Наличные', 'Выполнен', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 7), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 7)),
+('2024-06-09', 'Кредитная карта', 'Отклонен', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 8), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 8)),
+('2024-06-10', 'Наличные', 'Создан', (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 9), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 9));
+
+
+INSERT INTO Orders2 (quantity_product, quantity_service, OrderDate, PaymentMethod, Status, productid, serviceid, EmployeeID, "clientID") VALUES
+(2, 3, '2024-06-01', 'Кредитная карта', 'Создан', 1, 6, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 0), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 0)),
+(1, 5, '2024-06-02', 'Наличные', 'Выполнен', 6, 3, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 1), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 1)),
+(4, 9, '2024-06-03', 'Кредитная карта', 'Отклонен', 9, 2, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 2), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 2)),
+(10, 2, '2024-06-04', 'Наличные', 'Создан', 10, 10, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 3), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 3)),
+(3, 4, '2024-06-05', 'Кредитная карта', 'Выполнен', 4, 8, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 4), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 4)),
+(5, 6, '2024-06-06', 'Наличные', 'Отклонен', 7, 4, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 5), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 5)),
+(9, 7, '2024-06-07', 'Кредитная карта', 'Создан', 9, 3, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 6), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 6)),
+(8, 9, '2024-06-08', 'Наличные', 'Выполнен', 4, 6, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 7), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 7)),
+(6, 8, '2024-06-09', 'Кредитная карта', 'Отклонен', 8, 10, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 8), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 8)),
+(7, 10, '2024-06-10', 'Наличные', 'Создан', 7, 2, (SELECT EmployeeID FROM Employees LIMIT 1 OFFSET 9), (SELECT "clientID" FROM Clients LIMIT 1 OFFSET 9));
+
+
+Создание процедуры проверки адресов электронной почты
+CREATE OR REPLACE PROCEDURE check_email_validity()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    rec RECORD;
+    valid BOOLEAN;
+BEGIN
+    FOR rec IN SELECT "clientID", Email FROM Clients LOOP
+        -- Проверяем адрес электронной почты на корректность
+        valid := rec.Email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' AND
+                 rec.Email !~ '[\"\<>]';
+
+        -- Выводим результат
+        RAISE NOTICE 'clientID: %, Email: %, Valid: %', rec."clientID", rec.Email, CASE WHEN valid THEN 1 ELSE 0 END;
+    END LOOP;
+END;
+$$;
+
+call check_email_validity()
+
+-- Шаг 1: Создание таблицы History
+CREATE TABLE History (
+    ChangeDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    OrderID INT NOT NULL,
+    OrderDate TIMESTAMP NOT NULL,
+    OldStatus VARCHAR(10) NOT NULL,
+    NewStatus VARCHAR(10) NOT NULL,
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID)
+);
+
+-- Шаг 2: Создание функции триггера
+CREATE OR REPLACE FUNCTION log_order_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Вставляем запись в таблицу History
+    INSERT INTO History (OrderID, OrderDate, OldStatus, NewStatus)
+    VALUES (
+        NEW.OrderID,
+        NEW.OrderDate,
+        OLD.Status,
+        NEW.Status
+    );
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Шаг 3: Создание триггера
+CREATE TRIGGER trigger_order_status_change
+AFTER UPDATE OF Status ON Orders
+FOR EACH ROW
+WHEN (OLD.Status IS DISTINCT FROM NEW.Status)
+EXECUTE FUNCTION log_order_status_change();
+
+
+UPDATE Products
+SET Price = GREATEST(Price * 0.9, 0)
+WHERE CountryOfOrigin = 'Россия';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Проверка на существование базы данных
+def check_database_exists(user, password, host, db_name):
+    if not db_name:  # проверка на пустую строку
+        pass
+    else:
+        try:
+            conn = psycopg2.connect(
+                dbname=db_name,
+                user=user,
+                password=password,
+                host=host
+            )
+            conn.close()
+            return True
+        except psycopg2.OperationalError:
+            return False
+
+
+    if not check_database_exists(user, password, host, db_name):
+        info['text'] = f'База данных {db_name} не существует'
+        return
+
+
+
+
+
+
+
+
+
+        try:
+            print(f"Стандартный вывод ошибок: {e.stderr.decode('utf-8')}")
+        except UnicodeDecodeError:
+            try:
+                print(f"Стандартный вывод ошибок: {e.stderr.decode('cp1251')}")
+            except UnicodeDecodeError:
+                print(f"Стандартный вывод ошибок (двоичный): {e.stderr}")
