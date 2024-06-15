@@ -1,3 +1,5 @@
+Katya-yurinova@bk.ru
+
 CREATE OR REPLACE FUNCTION log_order_status_change()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -70,7 +70,7 @@ def show_another_window(previous_window):
         return results
 
     # Фильтр по выбору пользователя
-    def filter_database(client_name):
+    def filter_clients(client_name):
         conn = connect_db()
         cursor = conn.cursor()
 
@@ -101,7 +101,7 @@ def show_another_window(previous_window):
     # Фильтр клиента и обновление таблицы
     def filter_action():
         client_name = client_combobox.get()
-        results = filter_database(client_name)
+        results = filter_clients(client_name)
         update_table(results)
 
     # Обновление данных в таблице

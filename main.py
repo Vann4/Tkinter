@@ -68,11 +68,6 @@ button_switching_to_the_module_3 = Button(frame_buttons,
 button_switching_to_the_module_3.place(relx=0.7, rely=0.5, anchor='center')
 
 
-class EmptyFieldError(Exception):
-    """Пользовательское исключение для пустого поля"""
-    pass
-
-
 # Подключение к базе данных
 def connect_db(db_name):
     return psycopg2.connect(
