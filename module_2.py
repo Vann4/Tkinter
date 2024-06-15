@@ -1,17 +1,3 @@
-# from tkinter import *
-#
-#
-# def load_new_content(root):
-#     # Создаем новый фрейм и другие виджеты в основном окне
-#     frame_new = Frame(root, bg='#00bfff', bd=2)
-#     frame_new.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
-#
-#     label_new = Label(frame_new, text="Это новое содержимое", bg='#00bfff', font=30)
-#     label_new.pack(pady=20)
-#
-#     button_new = Button(frame_new, text="Новая кнопка", command=lambda: print("Новая кнопка нажата"))
-#     button_new.pack(pady=20)
-
 from tkinter import *
 from tkinter import ttk
 
@@ -106,7 +92,13 @@ def show_another_window(previous_window):
         cursor = conn.cursor()
 
         cursor.execute("DELETE FROM Products WHERE CountryOfOrigin = 'Япония'")
-        info['text'] = f'Товары из Японии успешно удалены'
+
+        deleted_rows = cursor.rowcount  # Количество удалённых строк
+
+        if deleted_rows > 0:
+            info['text'] = 'Все товары из Японии успешно удалены'
+        else:
+            info['text'] = 'Все товары из Японии уже удалены'
 
         cursor.close()
         conn.close()
